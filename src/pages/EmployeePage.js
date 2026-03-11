@@ -125,8 +125,7 @@ function EmployeePage() {
                             <td>{emp.name}</td>
                             <td>{emp.email}</td>
                             <td>{emp.department}</td>
-                            <td>{emp.department}</td>
-
+        
                             <td>
 
                                 <button onClick={() => editEmployee(emp)}>
