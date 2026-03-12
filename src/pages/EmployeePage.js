@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React,{useEffect,useState} from "react";
 import API from "../api/api";
 import "../styles/employee.css";
 
-function EmployeePage() {
+function EmployeePage(){
 
 const [employees,setEmployees]=useState([]);
-const [searchId,setSearchId]=useState("");
+const [employeeId,setEmployeeId]=useState("");
 
 const [form,setForm]=useState({
 id:"",
@@ -19,76 +19,92 @@ viewAllEmployees();
 },[]);
 
 
-// VIEW ALL EMPLOYEES
+/* VIEW ALL EMPLOYEES */
+
 const viewAllEmployees = async () => {
+
 const res = await API.get("/Employee");
 setEmployees(res.data);
+
 };
 
 
-// VIEW EMPLOYEE BY ID
+/* VIEW EMPLOYEE BY ID */
+
 const viewEmployeeById = async () => {
 
-if(!searchId){
+if(!employeeId){
 alert("Enter Employee ID");
 return;
 }
 
-const res = await API.get(`/Employee/${searchId}`);
+const res = await API.get(`/Employee/${employeeId}`);
 setEmployees([res.data]);
 
 };
 
 
-// HANDLE INPUT CHANGE
+/* HANDLE INPUT CHANGE */
+
 const handleChange=(e)=>{
 setForm({...form,[e.target.name]:e.target.value});
 };
 
 
-// CREATE OR UPDATE EMPLOYEE
-const submitEmployee=async(e)=>{
+/* CREATE / UPDATE EMPLOYEE */
+
+const submitEmployee = async (e) => {
+
 e.preventDefault();
+
+const employeeData = {
+name: form.name,
+email: form.email,
+department: form.department
+};
+
+try{
 
 if(form.id){
 
 await API.put(`/Employee/${form.id}`,{
 id:form.id,
-name:form.name,
-email:form.email,
-department:form.department
+...employeeData
 });
 
 }else{
 
-await API.post("/Employee",{
-name:form.name,
-email:form.email,
-department:form.department
-});
+await API.post("/Employee", employeeData);
 
 }
 
-setForm({id:"",name:"",email:"",department:""});
 viewAllEmployees();
-};
 
-
-// EDIT EMPLOYEE
-const editEmployee=(emp)=>{
 setForm({
-id:emp.id,
-name:emp.name,
-email:emp.email,
-department:emp.department
+id:"",
+name:"",
+email:"",
+department:""
 });
+
+}
+catch(error){
+
+console.log(error.response?.data);
+alert("Error saving employee");
+
+}
+
 };
 
 
-// DELETE EMPLOYEE
-const deleteEmployee=async(id)=>{
+/* DELETE EMPLOYEE */
+
+const deleteEmployee = async (id) => {
+
 await API.delete(`/Employee/${id}`);
 viewAllEmployees();
+
 };
 
 
@@ -99,14 +115,14 @@ return(
 <h2>Employee Management</h2>
 
 
-{/* SEARCH SECTION */}
+{/* SEARCH EMPLOYEE BY ID */}
 
 <div className="search-box">
 
 <input
 placeholder="Enter Employee ID"
-value={searchId}
-onChange={(e)=>setSearchId(e.target.value)}
+value={employeeId}
+onChange={(e)=>setEmployeeId(e.target.value)}
 />
 
 <button onClick={viewEmployeeById}>
@@ -121,7 +137,7 @@ View All Employees
 
 
 
-{/* FORM */}
+{/* EMPLOYEE FORM */}
 
 <form className="employee-form" onSubmit={submitEmployee}>
 
@@ -134,7 +150,7 @@ onChange={handleChange}
 
 <input
 name="email"
-placeholder="Employee Email"
+placeholder="Email"
 value={form.email}
 onChange={handleChange}
 />
@@ -147,7 +163,7 @@ onChange={handleChange}
 />
 
 <button type="submit">
-{form.id ? "Update Employee" : "Add Employee"}
+{form.id ? "Update Employee" : "Create Employee"}
 </button>
 
 </form>
@@ -173,6 +189,7 @@ onChange={handleChange}
 <tbody>
 
 {employees.map(emp=>(
+
 <tr key={emp.id}>
 
 <td>{emp.id}</td>
@@ -182,19 +199,24 @@ onChange={handleChange}
 
 <td>
 
-<button className="edit-btn"
-onClick={()=>editEmployee(emp)}>
+<button
+className="edit-btn"
+onClick={()=>setForm(emp)}
+>
 Edit
 </button>
 
-<button className="delete-btn"
-onClick={()=>deleteEmployee(emp.id)}>
+<button
+className="delete-btn"
+onClick={()=>deleteEmployee(emp.id)}
+>
 Delete
 </button>
 
 </td>
 
 </tr>
+
 ))}
 
 </tbody>
