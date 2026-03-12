@@ -1,152 +1,209 @@
 import React, { useEffect, useState } from "react";
 import API from "../api/api";
 import "../styles/employee.css";
-import axios from "axios";
 
 function EmployeePage() {
 
-    const [employees, setEmployees] = useState([]);
+const [employees,setEmployees]=useState([]);
+const [searchId,setSearchId]=useState("");
 
-    const [form, setForm] = useState({
-        id: "",
-        name: "",
-        email: "",
-        department: ""
-    });
+const [form,setForm]=useState({
+id:"",
+name:"",
+email:"",
+department:""
+});
 
-    useEffect(() => {
-        loadEmployees();
-    }, []);
+useEffect(()=>{
+viewAllEmployees();
+},[]);
 
-    const loadEmployees = async () => {
-        const res = await API.get("/Employee");
-        setEmployees(res.data);
-    };
 
-    const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
+// VIEW ALL EMPLOYEES
+const viewAllEmployees = async () => {
+const res = await API.get("/Employee");
+setEmployees(res.data);
+};
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        //snackbar
-   //materail UI install 
-   //view 
-        if (form.id) {
-            await API.put(`/Employee/${form.id}`, {
-                id: form.id,
-                name: form.name,
-                email: form.email,
-                department: form.department
-            }).then().catch((e)=> {
-                debugger
-                console.log(e)});
-        } else {
 
-            await axios.post("/Employee", {
-                name: form.name,
-                email: form.email,
-                department: form.department
-            }).then().catch((e)=> {
-                debugger
-                console.log(e)});;
-        }
+// VIEW EMPLOYEE BY ID
+const viewEmployeeById = async () => {
 
-        setForm({ id: "", name: "", email: "", department: "" });
-        loadEmployees();
-    };
+if(!searchId){
+alert("Enter Employee ID");
+return;
+}
 
-    const editEmployee = (emp) => {
-        setForm({
-            id: emp.id,
-            name: emp.name,
-            email: emp.email,
-            department: emp.department
-        });
-    };
+const res = await API.get(`/Employee/${searchId}`);
+setEmployees([res.data]);
 
-    const deleteEmployee = async (id) => {
-        await API.delete(`/Employee/${id}`);
-        loadEmployees();
-    };
+};
 
-    return (
-        <div className="container">
 
-            <h2>Employee Management</h2>
+// HANDLE INPUT CHANGE
+const handleChange=(e)=>{
+setForm({...form,[e.target.name]:e.target.value});
+};
 
-            <form onSubmit={handleSubmit} className="form">
 
-                <input
-                    name="name"
-                    placeholder="Name"
-                    value={form.name}
-                    onChange={handleChange}
-                />
+// CREATE OR UPDATE EMPLOYEE
+const submitEmployee=async(e)=>{
+e.preventDefault();
 
-                <input
-                    name="email"
-                    placeholder="Email"
-                    value={form.email}
-                    onChange={handleChange}
-                />
+if(form.id){
 
-                <input
-                    name="department"
-                    placeholder="Department"
-                    value={form.department}
-                    onChange={handleChange}
-                />
+await API.put(`/Employee/${form.id}`,{
+id:form.id,
+name:form.name,
+email:form.email,
+department:form.department
+});
 
-                <button type="submit">
-                    {form.id ? "Update" : "Add"} Employee
-                </button>
+}else{
 
-            </form>
+await API.post("/Employee",{
+name:form.name,
+email:form.email,
+department:form.department
+});
 
-            <table>
+}
 
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Department</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
+setForm({id:"",name:"",email:"",department:""});
+viewAllEmployees();
+};
 
-                <tbody>
 
-                    {employees.map(emp => (
-                        <tr key={emp.id}>
+// EDIT EMPLOYEE
+const editEmployee=(emp)=>{
+setForm({
+id:emp.id,
+name:emp.name,
+email:emp.email,
+department:emp.department
+});
+};
 
-                            <td>{emp.id}</td>
-                            <td>{emp.name}</td>
-                            <td>{emp.email}</td>
-                            <td>{emp.department}</td>
-        
-                            <td>
 
-                                <button onClick={() => editEmployee(emp)}>
-                                    Edit
-                                </button>
+// DELETE EMPLOYEE
+const deleteEmployee=async(id)=>{
+await API.delete(`/Employee/${id}`);
+viewAllEmployees();
+};
 
-                                <button onClick={() => deleteEmployee(emp.id)}>
-                                    Delete
-                                </button>
 
-                            </td>
+return(
 
-                        </tr>
-                    ))}
+<div className="employee-container">
 
-                </tbody>
+<h2>Employee Management</h2>
 
-            </table>
 
-        </div>
-    );
+{/* SEARCH SECTION */}
+
+<div className="search-box">
+
+<input
+placeholder="Enter Employee ID"
+value={searchId}
+onChange={(e)=>setSearchId(e.target.value)}
+/>
+
+<button onClick={viewEmployeeById}>
+View Employee By ID
+</button>
+
+<button onClick={viewAllEmployees}>
+View All Employees
+</button>
+
+</div>
+
+
+
+{/* FORM */}
+
+<form className="employee-form" onSubmit={submitEmployee}>
+
+<input
+name="name"
+placeholder="Employee Name"
+value={form.name}
+onChange={handleChange}
+/>
+
+<input
+name="email"
+placeholder="Employee Email"
+value={form.email}
+onChange={handleChange}
+/>
+
+<input
+name="department"
+placeholder="Department"
+value={form.department}
+onChange={handleChange}
+/>
+
+<button type="submit">
+{form.id ? "Update Employee" : "Add Employee"}
+</button>
+
+</form>
+
+
+
+{/* EMPLOYEE TABLE */}
+
+<table className="employee-table">
+
+<thead>
+
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Email</th>
+<th>Department</th>
+<th>Actions</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+{employees.map(emp=>(
+<tr key={emp.id}>
+
+<td>{emp.id}</td>
+<td>{emp.name}</td>
+<td>{emp.email}</td>
+<td>{emp.department}</td>
+
+<td>
+
+<button className="edit-btn"
+onClick={()=>editEmployee(emp)}>
+Edit
+</button>
+
+<button className="delete-btn"
+onClick={()=>deleteEmployee(emp.id)}>
+Delete
+</button>
+
+</td>
+
+</tr>
+))}
+
+</tbody>
+
+</table>
+
+</div>
+
+);
 }
 
 export default EmployeePage;

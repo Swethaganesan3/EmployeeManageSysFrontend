@@ -7,6 +7,7 @@ function TaskPage(){
 const [tasks,setTasks]=useState([]);
 const [employees,setEmployees]=useState([]);
 const [status,setStatus]=useState("");
+const [taskId,setTaskId] = useState("");
 
 const [form,setForm]=useState({
 id:"",
@@ -18,36 +19,92 @@ employeeID:""
 });
 
 useEffect(()=>{
-loadTasks();
 loadEmployees();
+viewAllTasks();
 },[]);
 
-const loadTasks=async()=>{
-const res=await API.get("/Task/status/Pending").catch(()=>({data:[]}));
+
+/* VIEW ALL TASKS */
+
+const viewAllTasks = async () => {
+const res = await API.get("/Task");
 setTasks(res.data);
 };
+
+
+/* VIEW TASK BY ID */
+
+const viewTaskById = async () => {
+
+if(!taskId){
+alert("Enter Task ID");
+return;
+}
+
+const res = await API.get(`/Task/${taskId}`);
+setTasks([res.data]);
+
+};
+
+
+/* LOAD EMPLOYEES */
 
 const loadEmployees=async()=>{
 const res=await API.get("/Employee");
 setEmployees(res.data);
 };
 
+
+/* FILTER TASKS */
+
+const filterTasks=async()=>{
+
+if(!status){
+alert("Select Status");
+return;
+}
+
+const res=await API.get(`/Task/status/${status}`);
+setTasks(res.data);
+
+};
+
+
+/* HANDLE INPUT CHANGE */
+
 const handleChange=(e)=>{
 setForm({...form,[e.target.name]:e.target.value});
 };
 
-const submitTask=async(e)=>{
+
+const submitTask = async (e) => {
+
 e.preventDefault();
+
+const taskData = {
+title: form.title,
+description: form.description,
+dueDate: form.dueDate,
+status: form.status,
+employeeID: parseInt(form.employeeID)
+};
+
+try{
 
 if(form.id){
 
-await API.put(`/Task/${form.id}`,form);
+await API.put(`/Task/${form.id}`,{
+id: form.id,
+...taskData
+});
 
 }else{
 
-await API.post("/Task",form);
+await API.post("/Task", taskData);
 
 }
+
+viewAllTasks();
 
 setForm({
 id:"",
@@ -58,18 +115,24 @@ status:"Pending",
 employeeID:""
 });
 
-loadTasks();
+}
+catch(error){
+
+console.log(error.response?.data);
+alert("Error assigning task");
+
+}
+
 };
+
+
+/* DELETE TASK */
 
 const deleteTask=async(id)=>{
 await API.delete(`/Task/${id}`);
-loadTasks();
+viewAllTasks();
 };
 
-const filterStatus=async()=>{
-const res=await API.get(`/Task/status/${status}`);
-setTasks(res.data);
-};
 
 return(
 
@@ -77,11 +140,57 @@ return(
 
 <h2>Task Management</h2>
 
-<form onSubmit={submitTask} className="task-form">
+
+{/* SEARCH TASK BY ID */}
+
+<div className="search-box">
+
+<input
+placeholder="Enter Task ID"
+value={taskId}
+onChange={(e)=>setTaskId(e.target.value)}
+/>
+
+<button onClick={viewTaskById}>
+View Task By ID
+</button>
+
+<button onClick={viewAllTasks}>
+View All Tasks
+</button>
+
+</div>
+
+
+
+{/* FILTER SECTION */}
+
+<div className="filter-box">
+
+<select onChange={(e)=>setStatus(e.target.value)}>
+
+<option value="">Select Status</option>
+<option value="Pending">Pending</option>
+<option value="InProgress">InProgress</option>
+<option value="Completed">Completed</option>
+
+</select>
+
+<button onClick={filterTasks}>
+Filter Tasks
+</button>
+
+</div>
+
+
+
+{/* TASK FORM */}
+
+<form className="task-form" onSubmit={submitTask}>
 
 <input
 name="title"
-placeholder="Title"
+placeholder="Task Title"
 value={form.title}
 onChange={handleChange}
 />
@@ -100,13 +209,16 @@ value={form.dueDate}
 onChange={handleChange}
 />
 
+
+{/* EMPLOYEE DROPDOWN */}
+
 <select
 name="employeeID"
 value={form.employeeID}
-onChange={handleChange}
+onChange={(e)=>setForm({...form,employeeID:e.target.value})}
 >
 
-<option>Select Employee</option>
+<option value="">Select Employee</option>
 
 {employees.map(emp=>(
 <option key={emp.id} value={emp.id}>
@@ -115,6 +227,7 @@ onChange={handleChange}
 ))}
 
 </select>
+
 
 <select
 name="status"
@@ -129,27 +242,16 @@ onChange={handleChange}
 </select>
 
 <button type="submit">
-{form.id?"Update":"Create"} Task
+{form.id ? "Update Task" : "Assign Task"}
 </button>
 
 </form>
 
-<div className="filter">
 
-<select onChange={(e)=>setStatus(e.target.value)}>
-<option value="">Filter Status</option>
-<option value="Pending">Pending</option>
-<option value="InProgress">InProgress</option>
-<option value="Completed">Completed</option>
-</select>
 
-<button onClick={filterStatus}>
-Filter
-</button>
+{/* TASK TABLE */}
 
-</div>
-
-<table>
+<table className="task-table">
 
 <thead>
 
@@ -166,6 +268,7 @@ Filter
 <tbody>
 
 {tasks.map(task=>(
+
 <tr key={task.id}>
 
 <td>{task.id}</td>
@@ -175,17 +278,24 @@ Filter
 
 <td>
 
-<button onClick={()=>setForm(task)}>
+<button
+className="edit-btn"
+onClick={()=>setForm(task)}
+>
 Edit
 </button>
 
-<button onClick={()=>deleteTask(task.id)}>
+<button
+className="delete-btn"
+onClick={()=>deleteTask(task.id)}
+>
 Delete
 </button>
 
 </td>
 
 </tr>
+
 ))}
 
 </tbody>
